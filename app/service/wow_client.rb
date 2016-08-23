@@ -18,51 +18,51 @@ module WowClient
       end
     rescue RestClient::NotFound => e
     rescue RestClient::InternalServerError => e
-      puts "InternalServerError for guild #{realm_slug} #{name_encoded}"
+      puts "InternalServerError for guild #{realm} #{character_name}"
     rescue RestClient::GatewayTimeout => e
-      puts "Gateway Timeout for for guild #{realm_slug} #{name_encoded}"
+      puts "Gateway Timeout for for guild #{realm} #{character_name}"
     end
 
     guild
   end
 
-  def self.update_guild(name, realm)
-    realm_slug = realm.parameterize
-    name_encoded = URI.encode name
+  def self.update_guild(guild)
+    realm_slug = guild.realm.parameterize
+    name_encoded = URI.encode guild.name
 
     begin
       response = RestClient.get "https://us.api.battle.net/wow/guild/#{realm_slug}/#{name_encoded}?fields=members&locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
-      puts "Requested guild member information for #{realm} #{name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
+      puts "Requested guild member information for #{guild.realm} #{guild.name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
       guild_hash = JSON.parse(response.body, :symbolize_names => true)
-      if guild_hash['members']
-        guild_hash['members'].each do |member_hash|
-          character_hash = member_hash['character']
-          character = Character.find_by_name_and_realm(character_hash[:name], character_hash[:realm])
+      if guild_hash[:members]
+        guild_hash[:members].each do |member_hash|
+          character_hash = member_hash[:character]
+          character = Character.find_by_name_and_realm(character_hash[:name], guild.realm)
 
           unless character
-            puts "Creating character realm=#{character_hash[:realm]} name=#{character_hash[:name]}"
-            character = guild.characters.create!(name: character_hash[:name],
-                                                 realm: character_hash[:guildRealm],
-                                                 clazz_id: character_hash[:class],
-                                                 race_id: character_hash[:race],
-                                                 gender: character_hash[:gender],
-                                                 level: character_hash[:level],
-                                                 achievement_points: character_hash[:achievementPoints],
-                                                 faction: guild_hash[:side]
-                                                 )
+            begin
+              character = guild.characters.create!(name: character_hash[:name],
+                                                   realm: guild.realm,
+                                                   clazz_id: character_hash[:class],
+                                                   race_id: character_hash[:race],
+                                                   gender: character_hash[:gender],
+                                                   level: character_hash[:level],
+                                                   achievement_points: character_hash[:achievementPoints],
+                                                   faction: guild_hash[:side]
+                                                   )
+            rescue ActiveRecord::RecordInvalid => e
+              puts "Validation failure for character #{guild.realm} #{guild.name}: #{e.message}: "
+            end
           end
         end
       end
     rescue RestClient::NotFound => e
-      puts "Guild not found for guild #{realm_slug} #{name_encoded}"
+      puts "Guild not found for guild #{guild.realm} #{guild.name}"
     rescue RestClient::InternalServerError => e
-      puts "InternalServerError for guild #{realm_slug} #{name_encoded}"
+      puts "InternalServerError for guild #{guild.realm} #{guild.name}"
     rescue RestClient::GatewayTimeout => e
-      puts "Gateway Timeout for for guild #{realm_slug} #{name_encoded}"
-    rescue ActiveRecord::RecordInvalid => e
-      puts "realm_slug=#{realm_slug} name=#{name} #{e.message}: "
+      puts "Gateway Timeout for for guild #{guild.realm} #{guild.name}"
     end
-
   end
 
   def self.create_or_update_item(item_id)
@@ -99,40 +99,42 @@ module WowClient
 
     character = Character.find_by_name_and_realm(name, realm)
 
-    begin
-      response = RestClient.get "https://us.api.battle.net/wow/character/#{realm_slug}/#{name_encoded}?locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
-      puts "Requested character information for #{realm} #{name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
-      character_json = JSON.parse(response.body, :symbolize_names => true)
+    unless character && character.updated_at > 1.days.ago
+      begin
+        response = RestClient.get "https://us.api.battle.net/wow/character/#{realm_slug}/#{name_encoded}?locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
+        puts "Requested character information for #{realm} #{name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
+        character_json = JSON.parse(response.body, :symbolize_names => true)
 
-      if character
-        character.update_attributes(clazz_id: character_json[:class],
-                                    race_id: character_json[:race],
-                                    gender: character_json[:gender],
-                                    level: character_json[:level],
-                                    achievement_points: character_json[:achievementPoints],
-                                    faction: character_json[:faction])
-      else
-        character = Character.create!(name: name,
-                                      realm: realm,
-                                      clazz_id: character_json[:class],
+        if character
+          character.update_attributes(clazz_id: character_json[:class],
                                       race_id: character_json[:race],
                                       gender: character_json[:gender],
                                       level: character_json[:level],
                                       achievement_points: character_json[:achievementPoints],
-                                      faction: character_json[:faction]
-                                      )
+                                      faction: character_json[:faction])
+        else
+          character = Character.create!(name: name,
+                                        realm: realm,
+                                        clazz_id: character_json[:class],
+                                        race_id: character_json[:race],
+                                        gender: character_json[:gender],
+                                        level: character_json[:level],
+                                        achievement_points: character_json[:achievementPoints],
+                                        faction: character_json[:faction]
+                                        )
+        end
+      rescue RestClient::NotFound => e
+        character = Character.create!(name: name, realm: realm) unless character
+      rescue RestClient::InternalServerError => e
+        puts "InternalServerError for character #{name} #{realm}"
+        character = Character.create!(name: name, realm: realm) unless character
+      rescue RestClient::GatewayTimeout => e
+        puts "Gateway Timeout for character #{name} #{realm}"
+        character = Character.create!(name: name, realm: realm) unless character
+      rescue RestClient::ServiceUnavailable => e
+        puts "Service Unavailable for character #{name} #{realm}"
+        character = Character.create!(name: name, realm: realm) unless character
       end
-    rescue RestClient::NotFound => e
-      character = Character.create!(name: name, realm: realm) unless character
-    rescue RestClient::InternalServerError => e
-      puts "InternalServerError for character #{name} #{realm}"
-      character = Character.create!(name: name, realm: realm) unless character
-    rescue RestClient::GatewayTimeout => e
-      puts "Gateway Timeout for character #{name} #{realm}"
-      character = Character.create!(name: name, realm: realm) unless character
-    rescue RestClient::ServiceUnavailable => e
-      puts "Service Unavailable for character #{name} #{realm}"
-      character = Character.create!(name: name, realm: realm) unless character
     end
 
     character

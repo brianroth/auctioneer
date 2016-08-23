@@ -10,7 +10,7 @@ namespace :wow do
       end
 
       Guild.order(realm: :asc, name: :asc).all.each do |guild|
-        WowClient.update_guild(guild.name, guild.realm)
+        WowClient.update_guild(guild)
       end
     end
   end
