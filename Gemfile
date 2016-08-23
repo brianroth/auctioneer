@@ -6,7 +6,6 @@ gem 'sidekiq'
 gem 'rest-client'
 gem 'pg'
 gem 'active_model_serializers'
-gem 'yajl-ruby', require: 'yajl'
 
 group :development, :test do
   gem 'pry-rails'

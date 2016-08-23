@@ -16,11 +16,8 @@ module WowClient
           guild = Guild.create!(name: guild_hash[:guild][:name], realm: guild_hash[:guild][:realm])
         end
       end
-    rescue RestClient::NotFound => e
-    rescue RestClient::InternalServerError => e
-      puts "InternalServerError for guild #{realm} #{character_name}"
-    rescue RestClient::GatewayTimeout => e
-      puts "Gateway Timeout for for guild #{realm} #{character_name}"
+    rescue RestClient::Exception => e
+      puts "#{e} for guild #{realm} #{character_name}"
     end
 
     guild
@@ -56,12 +53,8 @@ module WowClient
           end
         end
       end
-    rescue RestClient::NotFound => e
-      puts "Guild not found for guild #{guild.realm} #{guild.name}"
-    rescue RestClient::InternalServerError => e
-      puts "InternalServerError for guild #{guild.realm} #{guild.name}"
-    rescue RestClient::GatewayTimeout => e
-      puts "Gateway Timeout for for guild #{guild.realm} #{guild.name}"
+    rescue RestClient::Exception => e
+      puts "#{e} for guild #{guild.realm} #{guild.name}"
     end
   end
 
@@ -81,16 +74,12 @@ module WowClient
                             buy_price: item_hash[:buyPrice],
                             sell_price: item_hash[:sellPrice])
 
-      rescue RestClient::NotFound => e
-        puts "Item #{item_id} not found on remote server"
-      rescue RestClient::InternalServerError => e
-        puts "InternalServerError for item #{item_id}"
-      rescue RestClient::GatewayTimeout => e
-        puts "Gateway Timeout for item #{item_id}"
-      rescue RestClient::ServiceUnavailable => e
-        puts "Service Unavailable for item #{item_id}"
+      rescue RestClient::Exception => e
+        puts "#{e} for item #{item_id}"
       end
     end
+
+    item
   end
 
   def self.create_or_update_character(name, realm)
@@ -99,7 +88,7 @@ module WowClient
 
     character = Character.find_by_name_and_realm(name, realm)
 
-    unless character && character.updated_at > 1.days.ago
+    if character && character.updated_at < 3.days.ago
       begin
         response = RestClient.get "https://us.api.battle.net/wow/character/#{realm_slug}/#{name_encoded}?locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
         puts "Requested character information for #{realm} #{name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
@@ -111,7 +100,8 @@ module WowClient
                                       gender: character_json[:gender],
                                       level: character_json[:level],
                                       achievement_points: character_json[:achievementPoints],
-                                      faction: character_json[:faction])
+                                      faction: character_json[:faction],
+                                      updated_at: Time.now.utc)
         else
           character = Character.create!(name: name,
                                         realm: realm,
@@ -123,17 +113,13 @@ module WowClient
                                         faction: character_json[:faction]
                                         )
         end
-      rescue RestClient::NotFound => e
-        character = Character.create!(name: name, realm: realm) unless character
-      rescue RestClient::InternalServerError => e
-        puts "InternalServerError for character #{name} #{realm}"
-        character = Character.create!(name: name, realm: realm) unless character
-      rescue RestClient::GatewayTimeout => e
-        puts "Gateway Timeout for character #{name} #{realm}"
-        character = Character.create!(name: name, realm: realm) unless character
-      rescue RestClient::ServiceUnavailable => e
-        puts "Service Unavailable for character #{name} #{realm}"
-        character = Character.create!(name: name, realm: realm) unless character
+      rescue RestClient::Exception => e
+        puts "#{e} for character #{name} #{realm}"
+        if character
+          character.touch
+        else
+          character = Character.create!(name: name, realm: realm)
+        end
       end
     end
 

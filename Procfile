@@ -1,0 +1,1 @@
+worker: bundle exec sidekiq -c 20 -L log/sidekiq.log
