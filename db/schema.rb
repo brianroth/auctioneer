@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160817201057) do
+ActiveRecord::Schema.define(version: 20160823182400) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -42,6 +42,7 @@ ActiveRecord::Schema.define(version: 20160817201057) do
     t.datetime "updated_at",         null: false
     t.index ["clazz_id"], name: "index_characters_on_clazz_id", using: :btree
     t.index ["guild_id"], name: "index_characters_on_guild_id", using: :btree
+    t.index ["name", "realm"], name: "index_characters_on_name_and_realm", unique: true, using: :btree
     t.index ["race_id"], name: "index_characters_on_race_id", using: :btree
   end
 
