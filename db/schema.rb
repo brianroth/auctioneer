@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160823182400) do
+ActiveRecord::Schema.define(version: 20160823203313) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -32,8 +32,8 @@ ActiveRecord::Schema.define(version: 20160823182400) do
     t.integer  "guild_id"
     t.integer  "clazz_id"
     t.integer  "race_id"
+    t.integer  "realm_id",           null: false
     t.string   "name",               null: false
-    t.string   "realm",              null: false
     t.integer  "gender"
     t.integer  "level"
     t.integer  "achievement_points"
@@ -42,8 +42,9 @@ ActiveRecord::Schema.define(version: 20160823182400) do
     t.datetime "updated_at",         null: false
     t.index ["clazz_id"], name: "index_characters_on_clazz_id", using: :btree
     t.index ["guild_id"], name: "index_characters_on_guild_id", using: :btree
-    t.index ["name", "realm"], name: "index_characters_on_name_and_realm", unique: true, using: :btree
     t.index ["race_id"], name: "index_characters_on_race_id", using: :btree
+    t.index ["realm_id", "name"], name: "index_characters_on_realm_id_and_name", unique: true, using: :btree
+    t.index ["realm_id"], name: "index_characters_on_realm_id", using: :btree
   end
 
   create_table "clazzs", force: :cascade do |t|
@@ -56,9 +57,10 @@ ActiveRecord::Schema.define(version: 20160823182400) do
 
   create_table "guilds", force: :cascade do |t|
     t.string   "name",       null: false
-    t.string   "realm",      null: false
+    t.integer  "realm_id",   null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["realm_id"], name: "index_guilds_on_realm_id", using: :btree
   end
 
   create_table "items", force: :cascade do |t|
@@ -79,6 +81,18 @@ ActiveRecord::Schema.define(version: 20160823182400) do
     t.integer  "mask"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "realms", force: :cascade do |t|
+    t.string   "name",        null: false
+    t.string   "slug",        null: false
+    t.string   "realm_type",  null: false
+    t.string   "population",  null: false
+    t.string   "battlegroup", null: false
+    t.string   "locale",      null: false
+    t.string   "timezone",    null: false
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
   end
 
 end

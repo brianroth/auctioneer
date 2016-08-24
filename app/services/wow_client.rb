@@ -1,45 +1,67 @@
-module WowClient
-
-  def self.create_or_update_guild(character_name, realm)
-    realm_slug = realm.parameterize
-    name_encoded = URI.encode character_name
-
-    begin
-      response = RestClient.get "https://us.api.battle.net/wow/character/#{realm_slug}/#{name_encoded}?fields=guild&locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
-      puts "Requested character guild information for #{realm} #{character_name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
-      guild_hash = JSON.parse(response.body, :symbolize_names => true)
-
-      if guild_hash[:guild]
-        guild = Guild.find_by_name_and_realm(guild_hash[:guild][:name], guild_hash[:guild][:realm])
-
-        unless guild
-          guild = Guild.create!(name: guild_hash[:guild][:name], realm: guild_hash[:guild][:realm])
-        end
-      end
-    rescue RestClient::Exception => e
-      puts "#{e} for guild #{realm} #{character_name}"
-    end
-
-    guild
+class WowClient
+  def initialize(logger = nil)
+    @logger = logger
   end
 
-  def self.update_guild(guild)
-    realm_slug = guild.realm.parameterize
-    name_encoded = URI.encode guild.name
+  # owner_realm_name is neither realm slug, nor realm name
+  def create_or_update_character(character_name, owner_realm_name)
+    
+    if realm = Realm.where(slug: owner_realm_name.underscore.dasherize).first
 
+      character = realm.characters.find_by_name(character_name)
+
+      if character.nil? || character.updated_at < 3.days.ago
+        begin
+          character_hash = get("character/#{realm.slug}/#{URI.encode character_name}")
+
+          if character
+            character.update_attributes(clazz_id: character_hash[:class],
+                                        race_id: character_hash[:race],
+                                        realm: realm,
+                                        gender: character_hash[:gender],
+                                        level: character_hash[:level],
+                                        achievement_points: character_hash[:achievementPoints],
+                                        faction: character_hash[:faction],
+                                        updated_at: Time.now.utc)
+          else
+            character = realm.characters.create!(name: character_name,
+                                                clazz_id: character_hash[:class],
+                                                race_id: character_hash[:race],
+                                                gender: character_hash[:gender],
+                                                level: character_hash[:level],
+                                                achievement_points: character_hash[:achievementPoints],
+                                                faction: character_hash[:faction]
+                                                )
+          end
+        rescue RestClient::Exception => e
+          log "#{e} for character #{character_name} #{realm.name}", :error
+          if character
+            character.touch
+          else
+            character = realm.characters.create!(name: character_name)
+          end
+        end
+      end
+    else
+      raise "Realm not found: #{realm_name}"
+    end
+  end
+
+  def update_guild(guild)
     begin
-      response = RestClient.get "https://us.api.battle.net/wow/guild/#{realm_slug}/#{name_encoded}?fields=members&locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
-      puts "Requested guild member information for #{guild.realm} #{guild.name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
-      guild_hash = JSON.parse(response.body, :symbolize_names => true)
+      realm = guild.realm
+      guild_hash = get("guild/#{realm.slug}/#{URI.encode guild.name}",
+                       { :fields => 'members' })
+
       if guild_hash[:members]
         guild_hash[:members].each do |member_hash|
           character_hash = member_hash[:character]
-          character = Character.find_by_name_and_realm(character_hash[:name], guild.realm)
+          character = realm.characters.find_by_name(character_hash[:name])
 
           unless character
             begin
               character = guild.characters.create!(name: character_hash[:name],
-                                                   realm: guild.realm,
+                                                   realm: realm,
                                                    clazz_id: character_hash[:class],
                                                    race_id: character_hash[:race],
                                                    gender: character_hash[:gender],
@@ -48,23 +70,41 @@ module WowClient
                                                    faction: guild_hash[:side]
                                                    )
             rescue ActiveRecord::RecordInvalid => e
-              puts "Validation failure for character #{guild.realm} #{guild.name}: #{e.message}: "
+              log "Validation failure for character #{realm.name} #{guild.name}: #{e.message}: ", :error
             end
           end
         end
       end
     rescue RestClient::Exception => e
-      puts "#{e} for guild #{guild.realm} #{guild.name}"
+      log "#{e} for guild #{realm.name} #{guild.name}", :error
     end
+    guild
   end
 
-  def self.create_or_update_item(item_id)
+  def create_or_update_guild(character_name, realm)
+    begin
+      guild_hash = get("character/#{realm.slug}/#{URI.encode character_name}",
+                       { :fields => 'guild' })
+
+      if guild_hash[:guild]
+        guild = realm.guilds.find_by_name(guild_hash[:guild][:name])
+
+        unless guild
+          guild = realm.guilds.create!(name: guild_hash[:guild][:name])
+        end
+      end
+    rescue RestClient::Exception => e
+      log "#{e} for guild #{realm.name} #{character_name}", :error
+    end
+
+    guild
+  end
+
+  def create_or_update_item(item_id)
     item = Item.find_by_id(item_id)
     unless item
       begin
-        response = RestClient.get "https://us.api.battle.net/wow/item/#{item_id}?locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
-        puts "Requested item information for item #{item_id} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
-        item_hash = JSON.parse(response.body, :symbolize_names => true)
+        item_hash = get("item/#{item_id}")
         item = Item.create!(id: item_id,
                             name: item_hash[:name],
                             item_bind: item_hash[:itemBind],
@@ -75,54 +115,62 @@ module WowClient
                             sell_price: item_hash[:sellPrice])
 
       rescue RestClient::Exception => e
-        puts "#{e} for item #{item_id}"
+        log "#{e} for item #{item_id}", :error
       end
     end
-
     item
   end
 
-  def self.create_or_update_character(name, realm)
-    realm_slug = realm.underscore.dasherize
-    name_encoded = URI.encode name
+  def update_realm_status
+    begin
+      realms_hash = get("realm/status")
 
-    character = Character.find_by_name_and_realm(name, realm)
+      if realms_hash[:realms]
+        realms_hash[:realms].each do |realm_hash|
+          realm = Realm.find_by_name(realm_hash[:name])
 
-    if character && character.updated_at < 3.days.ago
-      begin
-        response = RestClient.get "https://us.api.battle.net/wow/character/#{realm_slug}/#{name_encoded}?locale=en_US&apikey=#{WowCommunityApi::API_KEY}"
-        puts "Requested character information for #{realm} #{name} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})"
-        character_json = JSON.parse(response.body, :symbolize_names => true)
-
-        if character
-          character.update_attributes(clazz_id: character_json[:class],
-                                      race_id: character_json[:race],
-                                      gender: character_json[:gender],
-                                      level: character_json[:level],
-                                      achievement_points: character_json[:achievementPoints],
-                                      faction: character_json[:faction],
-                                      updated_at: Time.now.utc)
-        else
-          character = Character.create!(name: name,
-                                        realm: realm,
-                                        clazz_id: character_json[:class],
-                                        race_id: character_json[:race],
-                                        gender: character_json[:gender],
-                                        level: character_json[:level],
-                                        achievement_points: character_json[:achievementPoints],
-                                        faction: character_json[:faction]
-                                        )
-        end
-      rescue RestClient::Exception => e
-        puts "#{e} for character #{name} #{realm}"
-        if character
-          character.touch
-        else
-          character = Character.create!(name: name, realm: realm)
+          if realm
+            realm.update_attributes(population: realm_hash[:population])
+          else
+            realm = Realm.create!(name: realm_hash[:name],
+                                  slug: realm_hash[:slug],
+                                  realm_type: realm_hash[:type],
+                                  population: realm_hash[:population],
+                                  battlegroup: realm_hash[:battlegroup],
+                                  locale: realm_hash[:locale],
+                                  timezone: realm_hash[:timezone]
+                                  )
+          end
         end
       end
     end
-
-    character
   end
+
+  private
+
+  def log(message, priority = :info)
+    if @logger
+      @logger.send(priority, message)
+    else
+      puts message
+    end
+    message
+  end
+
+  def get(resource, options = {})
+    parameters = {
+      locale: 'en_US',
+      apikey: WowCommunityApi::API_KEY
+    }.merge(options)
+
+    response = RestClient.get "https://us.api.battle.net/wow/#{resource}",
+      params: parameters,
+      content_type: :json,
+      accept: :json
+
+    log "Requested #{resource} (X-Plan-Quota-Current=#{response.headers[:x_plan_quota_current]})", :debug
+
+    JSON.parse(response.body, :symbolize_names => true)
+  end
+
 end

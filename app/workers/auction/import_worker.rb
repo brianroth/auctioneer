@@ -1,15 +1,19 @@
 class Auction::ImportWorker
   include Sidekiq::Worker
 
+  def initialize
+    @wow_client = WowClient.new(logger)
+  end
+
   def perform(auction_hash)
 
     logger.info "Performing import job auction_hash = #{auction_hash.inspect}"
 
     auction_hash.deep_symbolize_keys!
 
-    item = WowClient.create_or_update_item(auction_hash[:item])
+    item = @wow_client.create_or_update_item(auction_hash[:item])
 
-    character = WowClient.create_or_update_character(auction_hash[:owner], auction_hash[:ownerRealm])
+    character = @wow_client.create_or_update_character(auction_hash[:owner], auction_hash[:ownerRealm])
 
     auction = Auction.find_by_id(auction_hash[:auc])
 

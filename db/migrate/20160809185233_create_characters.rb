@@ -4,8 +4,8 @@ class CreateCharacters < ActiveRecord::Migration[5.0]
       t.references :guild, null: true
       t.references :clazz, null: true
       t.references :race, null: true
+      t.references :realm, null: false
       t.string :name, null: false
-      t.string :realm, null: false
       t.integer :gender
       t.integer :level
       t.integer :achievement_points
