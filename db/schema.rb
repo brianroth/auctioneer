@@ -18,6 +18,7 @@ ActiveRecord::Schema.define(version: 20160823203313) do
   create_table "auctions", force: :cascade do |t|
     t.integer  "item_id",      null: false
     t.integer  "character_id", null: false
+    t.integer  "realm_id",     null: false
     t.bigint   "bid",          null: false
     t.bigint   "buyout",       null: false
     t.integer  "quantity",     null: false
@@ -26,6 +27,7 @@ ActiveRecord::Schema.define(version: 20160823203313) do
     t.datetime "updated_at",   null: false
     t.index ["character_id"], name: "index_auctions_on_character_id", using: :btree
     t.index ["item_id"], name: "index_auctions_on_item_id", using: :btree
+    t.index ["realm_id"], name: "index_auctions_on_realm_id", using: :btree
   end
 
   create_table "characters", force: :cascade do |t|

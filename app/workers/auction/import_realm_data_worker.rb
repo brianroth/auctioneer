@@ -6,12 +6,11 @@ class Auction::ImportRealmDataWorker
   end
   
   def perform(realm_name)
-
     logger.info "Performing realm import, realm_name = #{realm_name}"
 
     raise "'realm' argument is required" unless realm_name
 
-    @wow_client.update_realm_status
+    @wow_client.update_realm_status unless Realm.any?
 
     realm = Realm.where("lower(name) = ?", realm_name.downcase).first
 

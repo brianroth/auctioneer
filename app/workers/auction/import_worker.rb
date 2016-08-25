@@ -25,6 +25,7 @@ class Auction::ImportWorker
     else
       if (character && item)
         auction = character.auctions.create!(item: item,
+                                             realm: character.realm,
                                              bid: auction_hash[:bid],
                                              quantity: auction_hash[:quantity],
                                              buyout: auction_hash[:buyout],

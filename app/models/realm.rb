@@ -11,4 +11,5 @@ class Realm < ApplicationRecord
 
   has_many :characters
   has_many :guilds
+  has_many :auctions
 end

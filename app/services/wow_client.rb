@@ -5,7 +5,9 @@ class WowClient
 
   # owner_realm_name is neither realm slug, nor realm name
   def create_or_update_character(character_name, owner_realm_name)
-    
+
+    character = nil
+
     if realm = Realm.where(slug: owner_realm_name.underscore.dasherize).first
 
       character = realm.characters.find_by_name(character_name)
@@ -32,6 +34,8 @@ class WowClient
                                                 achievement_points: character_hash[:achievementPoints],
                                                 faction: character_hash[:faction]
                                                 )
+
+            Character::UpdateGuildWorker.perform_async character.id
           end
         rescue RestClient::Exception => e
           log "#{e} for character #{character_name} #{realm.name}", :error
@@ -43,8 +47,10 @@ class WowClient
         end
       end
     else
-      raise "Realm not found: #{realm_name}"
+      raise "Realm not found: #{owner_realm_name}"
     end
+
+    character
   end
 
   def update_guild(guild)
@@ -94,7 +100,7 @@ class WowClient
         end
       end
     rescue RestClient::Exception => e
-      log "#{e} for guild #{realm.name} #{character_name}", :error
+      log "#{e} for character #{realm.name} #{character_name}", :error
     end
 
     guild
