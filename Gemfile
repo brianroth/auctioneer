@@ -6,6 +6,7 @@ gem 'sidekiq'
 gem 'rest-client'
 gem 'pg'
 gem 'active_model_serializers'
+gem 'sinatra', '~> 2.0.0.beta2', :require => false
 
 group :development, :test do
   gem 'pry-rails'

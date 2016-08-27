@@ -1,5 +1,6 @@
 class Auction::ImportRealmDataWorker
   include Sidekiq::Worker
+  sidekiq_options queue: 'important'
 
   def initialize
     @wow_client = WowClient.new(logger)

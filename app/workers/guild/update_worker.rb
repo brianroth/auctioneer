@@ -1,6 +1,7 @@
 class Guild::UpdateWorker
   include Sidekiq::Worker
-
+  sidekiq_options queue: 'important'
+  
   def initialize
     @wow_client = WowClient.new(logger)
   end

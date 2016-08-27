@@ -14,6 +14,8 @@ This project uses Sidekiq for background processing.  Sidekiq must be running fo
 foreman start
 ```
 
+To view the sidekiq admin interface go to http://localhost:5000/sidekiq
+
 ## Features
 
 Currently everything is done using rake tasks
@@ -25,3 +27,13 @@ rake -T wow
 
 to see what commands are supported
 
+For example, to import all auctions and characters for the realm Earthen Ring run
+```
+rake wow:auction:import
+```
+
+To load all guild rosters for all known characters as well as import all guild memberships for all characters that currently
+are stored without a guild run
+```
+rake wow:guild:import
+```

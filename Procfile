@@ -1,1 +1,2 @@
-worker: bundle exec sidekiq -c 20 -L log/sidekiq.log
+web: bundle exec puma
+worker: bundle exec sidekiq -L log/sidekiq.log
