@@ -29,7 +29,7 @@ to see what commands are supported
 
 For example, to import all auctions and characters for the realm Earthen Ring run
 ```
-rake wow:auction:import
+rake wow:auction:import realm='Earthen Ring'
 ```
 
 To load all guild rosters for all known characters as well as import all guild memberships for all characters that currently
