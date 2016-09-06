@@ -73,7 +73,7 @@ class WowClient
                                                    gender: character_hash[:gender],
                                                    level: character_hash[:level],
                                                    achievement_points: character_hash[:achievementPoints],
-                                                   faction: guild_hash[:side]
+                                                   faction_id: guild_hash[:side]
                                                    )
             rescue ActiveRecord::RecordInvalid => e
               log "Validation failure for character #{realm.name} #{guild.name}: #{e.message}: ", :error

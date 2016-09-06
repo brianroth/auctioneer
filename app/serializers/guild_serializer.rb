@@ -3,6 +3,6 @@ class GuildSerializer < BaseSerializer
   has_one :realm
 
   def members
-    object.characters.count
+    object.characters.size
   end
 end

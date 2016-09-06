@@ -3,7 +3,7 @@ class GuildsController < BaseController
   before_action :find_guild, only: [:show]
 
   def index
-    guilds = apply_filters(Guild.all, filter_params)
+    guilds = apply_filters(Guild.includes(:realm), filter_params)
     guilds = paginate(guilds)
 
     render json: guilds, meta: meta_attributes(guilds)
