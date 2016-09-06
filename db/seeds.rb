@@ -26,3 +26,6 @@ Clazz.create!(id: 9, mask: 256, power_type: 'mana', name: 'Warlock')
 Clazz.create!(id: 10, mask: 512, power_type: 'energy', name: 'Monk')
 Clazz.create!(id: 11, mask: 1024, power_type: 'mana', name: 'Druid')
 Clazz.create!(id: 12, mask: 2048, power_type: 'fury', name: 'Demon Hunter')
+
+Faction.create!(id: 1, name: 'Horde')
+Faction.create!(id: 0, name: 'Alliance')

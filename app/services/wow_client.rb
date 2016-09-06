@@ -8,7 +8,7 @@ class WowClient
 
     character = nil
 
-    if realm = Realm.where(slug: owner_realm_name.underscore.dasherize).first
+    if realm = Realm.cached_find_by_slug(owner_realm_name.underscore.dasherize)
 
       character = realm.characters.find_by_name(character_name)
 
@@ -23,7 +23,7 @@ class WowClient
                                         gender: character_hash[:gender],
                                         level: character_hash[:level],
                                         achievement_points: character_hash[:achievementPoints],
-                                        faction: character_hash[:faction],
+                                        faction_id: character_hash[:faction],
                                         updated_at: Time.now.utc)
           else
             character = realm.characters.create!(name: character_name,
@@ -32,7 +32,7 @@ class WowClient
                                                 gender: character_hash[:gender],
                                                 level: character_hash[:level],
                                                 achievement_points: character_hash[:achievementPoints],
-                                                faction: character_hash[:faction]
+                                                faction_id: character_hash[:faction]
                                                 )
 
             Character::UpdateGuildWorker.perform_async character.id
@@ -107,7 +107,7 @@ class WowClient
   end
 
   def create_or_update_item(item_id)
-    item = Item.find_by_id(item_id)
+    item = Item.cached_find_by_id(item_id)
     unless item
       begin
         item_hash = get("item/#{item_id}")
@@ -133,7 +133,7 @@ class WowClient
 
       if realms_hash[:realms]
         realms_hash[:realms].each do |realm_hash|
-          realm = Realm.find_by_name(realm_hash[:name])
+          realm = Realm.cached_find_by_name(realm_hash[:name])
 
           if realm
             realm.update_attributes(population: realm_hash[:population])

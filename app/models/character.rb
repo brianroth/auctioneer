@@ -3,7 +3,8 @@ class Character < ApplicationRecord
 
   has_many :auctions
   belongs_to :realm
-  belongs_to :guild, optional: true
+  belongs_to :guild, optional: true, counter_cache: true
   belongs_to :race, optional: true
   belongs_to :clazz, optional: true
+  belongs_to :faction, optional: true
 end

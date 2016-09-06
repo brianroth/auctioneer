@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160823203313) do
+ActiveRecord::Schema.define(version: 20160906163720) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -35,14 +35,15 @@ ActiveRecord::Schema.define(version: 20160823203313) do
     t.integer  "clazz_id"
     t.integer  "race_id"
     t.integer  "realm_id",           null: false
+    t.integer  "faction_id"
     t.string   "name",               null: false
     t.integer  "gender"
     t.integer  "level"
     t.integer  "achievement_points"
-    t.integer  "faction"
     t.datetime "created_at",         null: false
     t.datetime "updated_at",         null: false
     t.index ["clazz_id"], name: "index_characters_on_clazz_id", using: :btree
+    t.index ["faction_id"], name: "index_characters_on_faction_id", using: :btree
     t.index ["guild_id"], name: "index_characters_on_guild_id", using: :btree
     t.index ["race_id"], name: "index_characters_on_race_id", using: :btree
     t.index ["realm_id", "name"], name: "index_characters_on_realm_id_and_name", unique: true, using: :btree
@@ -57,11 +58,18 @@ ActiveRecord::Schema.define(version: 20160823203313) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "guilds", force: :cascade do |t|
+  create_table "factions", force: :cascade do |t|
     t.string   "name",       null: false
-    t.integer  "realm_id",   null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "guilds", force: :cascade do |t|
+    t.string   "name",             null: false
+    t.integer  "realm_id",         null: false
+    t.integer  "characters_count"
+    t.datetime "created_at",       null: false
+    t.datetime "updated_at",       null: false
     t.index ["realm_id"], name: "index_guilds_on_realm_id", using: :btree
   end
 

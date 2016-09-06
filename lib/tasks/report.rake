@@ -7,7 +7,7 @@ namespace :wow do
 
       # Underpriced buyouts
       buyouts = Auction.joins(:item)
-      .where('auctions.buyout > 0 and (auctions.buyout+50000) < items.sell_price')
+      .where('auctions.buyout > 0 and (auctions.buyout+100000) < items.sell_price')
       .order(:realm_id)
 
       puts "\nAuctions with buyouts less than vendor price\n\n"
@@ -25,7 +25,7 @@ namespace :wow do
 
       # Underpriced bids
       bids = Auction.joins(:item)
-      .where('auctions.bid > 0 and (auctions.bid+50000) < items.sell_price')
+      .where('auctions.bid > 0 and (auctions.bid+100000) < items.sell_price')
       .order(:realm_id)
 
       puts "\nAuctions with bids less than vendor price\n\n"
