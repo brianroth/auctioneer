@@ -1,4 +1,6 @@
 class Character < ApplicationRecord
+  default_scope { order(:name => :asc) } 
+
   validates :name, presence: true, uniqueness: { scope: :realm }, length: { maximum: 100 }
 
   has_many :auctions

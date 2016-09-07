@@ -107,13 +107,16 @@ class WowClient
   end
 
   def create_or_update_item(item_id)
-    item = Item.cached_find_by_id(item_id)
-    unless item
+    
+    unless item = Item.cached_find_by_id(item_id)
       begin
         item_hash = get("item/#{item_id}")
         item = Item.create!(id: item_id,
                             name: item_hash[:name],
-                            item_bind: item_hash[:itemBind],
+                            description: item_hash[:description],
+                            icon: item_hash[:icon],
+                            quality: item_hash[:quality],
+                            bind_id: item_hash[:itemBind],
                             item_level: item_hash[:itemLevel],
                             item_clazz: item_hash[:itemClass],
                             item_sub_clazz: item_hash[:itemSubClass],

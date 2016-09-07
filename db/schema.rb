@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160906163720) do
+ActiveRecord::Schema.define(version: 20160906211134) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -28,6 +28,12 @@ ActiveRecord::Schema.define(version: 20160906163720) do
     t.index ["character_id"], name: "index_auctions_on_character_id", using: :btree
     t.index ["item_id"], name: "index_auctions_on_item_id", using: :btree
     t.index ["realm_id"], name: "index_auctions_on_realm_id", using: :btree
+  end
+
+  create_table "binds", force: :cascade do |t|
+    t.string   "name",       null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "characters", force: :cascade do |t|
@@ -75,14 +81,18 @@ ActiveRecord::Schema.define(version: 20160906163720) do
 
   create_table "items", force: :cascade do |t|
     t.string   "name",           null: false
-    t.integer  "item_bind",      null: false
+    t.string   "description"
+    t.string   "icon"
+    t.integer  "bind_id",        null: false
     t.integer  "item_level",     null: false
+    t.integer  "quality"
     t.integer  "item_clazz"
     t.integer  "item_sub_clazz"
     t.integer  "buy_price"
     t.integer  "sell_price"
     t.datetime "created_at",     null: false
     t.datetime "updated_at",     null: false
+    t.index ["bind_id"], name: "index_items_on_bind_id", using: :btree
   end
 
   create_table "races", force: :cascade do |t|

@@ -12,5 +12,7 @@ class CreateCharacters < ActiveRecord::Migration[5.0]
       t.integer :achievement_points
       t.timestamps null: false
     end
+
+    add_index(:characters, [:realm_id, :name], unique: true)
   end
 end

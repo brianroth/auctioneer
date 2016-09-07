@@ -1,6 +1,8 @@
 class BaseController < ActionController::API
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
 
+  before_action :set_default_response_format
+
   def not_found
     return api_error(status: :not_found, errors: 'Not found')
   end
@@ -30,5 +32,10 @@ class BaseController < ActionController::API
 
   def filter_params
     params.permit!.to_h
+  end
+
+private
+  def set_default_response_format
+    request.format = :json
   end
 end

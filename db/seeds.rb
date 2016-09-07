@@ -29,3 +29,8 @@ Clazz.create!(id: 12, mask: 2048, power_type: 'fury', name: 'Demon Hunter')
 
 Faction.create!(id: 1, name: 'Horde')
 Faction.create!(id: 0, name: 'Alliance')
+
+Bind.create!(id: 0, name: 'Binds when equipped')
+Bind.create!(id: 1, name: 'Binds when picked up')
+Bind.create!(id: 2, name: 'Binds when equipped')
+Bind.create!(id: 3, name: 'Binds when used')
