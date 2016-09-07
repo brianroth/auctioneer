@@ -13,4 +13,10 @@ class Item < ApplicationRecord
       Item.find_by_id(item_id)
     end
   end
+
+  def self.cached_create!(attributes)
+    item = Item.create!(attributes)
+    Rails.cache.write("item/#{item.id}", item)
+    item
+  end
 end

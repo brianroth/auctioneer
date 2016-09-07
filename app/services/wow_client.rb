@@ -111,7 +111,7 @@ class WowClient
     unless item = Item.cached_find_by_id(item_id)
       begin
         item_hash = get("item/#{item_id}")
-        item = Item.create!(id: item_id,
+        item = Item.cached_create!(id: item_id,
                             name: item_hash[:name],
                             description: item_hash[:description],
                             icon: item_hash[:icon],
