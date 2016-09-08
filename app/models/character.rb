@@ -1,5 +1,9 @@
 class Character < ApplicationRecord
   default_scope { order(:name => :asc) } 
+  scope :horde, -> { where(faction_id: 1) }
+  scope :alliance, -> { where(faction_id: 0) }
+  scope :unguilded, -> { where(guild_id: nil) }
+  scope :leveled, -> { where.not(level: nil) }
 
   validates :name, presence: true, uniqueness: { scope: :realm }, length: { maximum: 100 }
 
